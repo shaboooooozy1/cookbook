@@ -12,8 +12,11 @@ cookbook/
 ├── concept-deep-dive/            # Educational deep-dives (prompting, quantization, sampling, tokenization)
 ├── mistral/                      # Official Mistral examples organized by capability
 │   ├── agents/                   # Agent implementations
-│   │   ├── agents_api/           # Framework-based (Mistral Agents API)
-│   │   └── non_framework/        # Custom agent implementations
+│   │   ├── agents_api/           # Framework-based (6 projects: financial_analyst, food_diet_companion,
+│   │   │                         #   github_agent, multi_agents_data_analysis, prd_linear_ticket, travel_assistant)
+│   │   └── non_framework/        # Custom implementations (6 projects: agentic_workflows, earnings_calls,
+│   │                             #   hubspot_dynamic_multi_agent, industrial_knowledge_agent,
+│   │                             #   recruitment_agent, transcript_linearticket_agent)
 │   ├── classifier_factory/       # Fine-tuning classifiers
 │   ├── data_generation/          # Synthetic data generation
 │   ├── embeddings/               # Embedding examples
@@ -21,21 +24,44 @@ cookbook/
 │   ├── fine_tune/                # Fine-tuning guides
 │   ├── function_calling/         # Function calling (including text-to-SQL)
 │   ├── image_understanding/      # Pixtral image processing
-│   ├── lechat_custom_mcp_server/ # MCP server examples
+│   ├── lechat_custom_mcp_server/ # MCP server examples (includes tic-tac-toe game)
 │   ├── moderation/               # Content moderation
 │   ├── ocr/                      # OCR and document understanding
+│   │   ├── documentChunking/     #   Advanced document chunking
+│   │   ├── hcls/                 #   Healthcare/Life Sciences OCR
+│   │   └── product_datasheet_analysis/  # Product-specific OCR
 │   ├── prompting/                # Prompting techniques
 │   └── rag/                      # RAG implementations
-├── third_party/                  # 36 third-party integrations (LlamaIndex, LangChain, ChromaDB, etc.)
+├── third_party/                  # 33 third-party integrations
 ├── data/                         # Shared data files (CSV, SQL, JSONL)
 ├── images/                       # Screenshots and diagrams
 └── gif/                          # Demo GIFs
 ```
 
+### File Counts
+
+| Type | Count |
+|------|-------|
+| Jupyter Notebooks (.ipynb) | ~94 |
+| Python scripts (.py) | ~46 |
+| Markdown files (.md) | ~54 |
+| Third-party integrations | 33 |
+| Agent projects (framework) | 6 |
+| Agent projects (non-framework) | 6 |
+
+### Third-Party Integrations (`third_party/`)
+
+Organized by category:
+- **RAG & Vector DBs:** LlamaIndex, LangChain, ChromaDB, Pinecone, Milvus, Neo4j, Haystack, Azure_AI_Search, MongoDB, Neon
+- **Observability:** Phoenix, Langfuse, Langtrace, MLflow, OpenLIT, Maxim, phospho
+- **UI/Chat:** Chainlit, Streamlit, Gradio, Mesop, Solara, Panel
+- **Multi-agent:** CAMEL_AI, MS_Autogen_pgsql, metagpt, PydanticAI
+- **Other:** E2B_Code_Interpreting, Indexify, argilla, Pixeltable, wandb, Ollama, x-cmd
+
 ## Key Conventions
 
 ### File Formats
-- **Notebooks (.ipynb)**: Primary format for examples (~94 notebooks). Must be runnable on Google Colab.
+- **Notebooks (.ipynb)**: Primary format for examples. Must be runnable on Google Colab.
 - **Python scripts (.py)**: Used in agent projects for tools, backends, and MCP servers.
 - **Markdown (.md)**: Used for concept deep-dives and README files within subdirectories.
 
@@ -47,7 +73,9 @@ cookbook/
 ### Dependency Management
 - **pyproject.toml** + **uv.lock**: Used in modern agent projects (agents_api/)
 - **requirements.txt**: Used in simpler or older projects
-- Python version: typically 3.11+
+- **No root-level pyproject.toml** — each agent project manages its own dependencies
+- Python version: typically 3.9+ (3.11+ for newer projects)
+- `uv` is the preferred package manager for newer projects
 - Always pin package versions in notebooks and config files
 
 ### Content Guidelines (from CONTRIBUTING_GUIDE.md and README.md)
@@ -56,6 +84,7 @@ cookbook/
 - Maintain neutral tone, minimize marketing language
 - Respect copyright — don't copy content without permission
 - Tag all package versions for reproducibility
+- New cookbooks must be added to the README.md tables (official or third-party)
 
 ## Security
 
@@ -66,16 +95,19 @@ pip install pre-commit
 pre-commit install
 ```
 
-Hooks enforced (`.pre-commit-config.yaml`):
+Hooks enforced (`.pre-commit-config.yaml`, using pre-commit v4.5.0):
 - `detect-private-key` — blocks commits containing API keys or credentials
-- `check-merge-conflict`, `check-yaml`, `check-toml` — format validation
+- `check-byte-order-marker` — BOM detection
+- `check-merge-conflict` — merge conflict markers
+- `check-symlinks` — broken symlinks
+- `check-yaml`, `check-toml` — format validation
 - `trailing-whitespace`, `end-of-file-fixer`, `mixed-line-ending` — formatting
 
-**Never commit API keys, secrets, or credentials.** Use environment variables instead (e.g., `os.environ["MISTRAL_API_KEY"]`).
+**Never commit API keys, secrets, or credentials.** Use environment variables instead (e.g., `os.environ["MISTRAL_API_KEY"]`). Use `.env` files locally.
 
 ### CI/CD
-- **security-check.yml**: Runs `detect-private-key` on all pushes/PRs to main/develop
-- **trigger-docs-update.yml**: Pushes to main trigger a webhook to update `mistralai/platform-docs`
+- **security-check.yml**: Runs `detect-private-key` on all pushes/PRs to main/develop (Python 3.9)
+- **trigger-docs-update.yml**: Pushes to main trigger a webhook to update `mistralai/platform-docs` using `COOKBOOKS_UPDATE_KEY` secret
 
 ## Development Workflow
 
@@ -94,19 +126,32 @@ Hooks enforced (`.pre-commit-config.yaml`):
 
 ## Project Organization Patterns
 
-### Agent Projects (`mistral/agents/`)
-Agent projects under `agents_api/` follow a common structure:
+### Agent Projects — Framework-based (`mistral/agents/agents_api/`)
+These use the Mistral Agents API and follow a common structure:
 ```
 agent_name/
 ├── pyproject.toml        # Dependencies and project config
 ├── uv.lock               # Locked dependencies
-├── requirements.txt      # Alternative dependency file
 ├── README.md             # Usage instructions
-├── app.py or main.py     # Entry point
+├── app.py or agent.py    # Entry point
 ├── tools/                # Tool implementations (MCP servers, utilities)
+├── mcp_servers/          # MCP server definitions (some projects)
 ├── backend/              # Backend logic
+├── public/               # Static assets (some projects)
+├── .chainlit/            # Chainlit UI config (some projects)
 └── configs.py            # Centralized configuration
 ```
+
+Projects: `financial_analyst`, `food_diet_companion`, `github_agent`, `multi_agents_data_analysis`, `prd_linear_ticket`, `travel_assistant`
+
+### Agent Projects — Non-framework (`mistral/agents/non_framework/`)
+Custom agent implementations using direct API calls:
+- `agentic_workflows/` — Parallel/serial workflow patterns (notebooks)
+- `earnings_calls/` — Multi-agent earnings call analysis (MAECAS)
+- `hubspot_dynamic_multi_agent/` — HubSpot integration with Chainlit UI
+- `industrial_knowledge_agent/` — Industry-specific knowledge agent
+- `recruitment_agent/` — Multi-agent recruitment workflow
+- `transcript_linearticket_agent/` — Transcript to ticket conversion
 
 ### Third-Party Integrations (`third_party/`)
 Each integration typically contains:
@@ -117,7 +162,17 @@ ToolName/
 ```
 
 ### Concept Deep-Dives (`concept-deep-dive/`)
-Educational content organized by topic with markdown docs and visual assets (PNG diagrams).
+Educational content organized by topic with markdown docs and visual assets (PNG diagrams):
+- `prompting/` — Prompt optimization techniques
+- `quantization/` — 5 method-specific notebooks (AWQ, BnB, EXL2, GGUF, GPTQ)
+- `sampling/` — Temperature, top-k, top-p explanations with diagrams
+- `tokenization/` — 7 markdown files covering basics, boundaries, templates, control tokens
+
+### Shared Data (`data/`)
+- `LeetCodeTSNE.csv` — LeetCode dataset
+- `Symptom2Disease.csv` — Medical/healthcare data
+- `northwind-queries.jsonl` — Database queries
+- `northwind-schema.sql` — Database schema
 
 ## Common Tools and Libraries
 - `mistralai` — Mistral Python SDK
