@@ -151,7 +151,6 @@ def main() -> None:
             try:
                 base64_pdf = encode_pdf_to_base64(pdf_path)
                 logger.info("PDF has been encoded to base64 and did not need to be split")
-                # TODO: Add logic to send the base64_pdf to the API
                 response = send_to_api(base64_pdf, args.endpoint, args.api_key, args.model_name)
                 logger.info(f"API response: {response}")
             except Exception as e:
