@@ -24,7 +24,7 @@ This script demonstrates a real-time, triggerable speech-to-speech assistant usi
 
 **Note**: Requires a Mistral API key (`MISTRAL_API_KEY` env var).
 
-To run this cript:
+To run this script:
 pip install pynput sounddevice queue scipy mistralai
 
 For more information, visit the [Blog Post](https://learn.mistral.ai/home/blogs/designing-a-speech-to-speech-assistant-2026-04-02).
@@ -173,9 +173,9 @@ def on_press(key):
                 audio_array = np.concatenate(audio_data, axis=0)
                 write(OUTPUT_FILE, SAMPLE_RATE, audio_array)
                 print(f"Saved to {OUTPUT_FILE}")
-                trancription = transcribe(OUTPUT_FILE)
-                print(f"Transcription: {trancription}")
-                conversation_id, content = query(trancription, conversation_id)
+                transcription = transcribe(OUTPUT_FILE)
+                print(f"Transcription: {transcription}")
+                conversation_id, content = query(transcription, conversation_id)
                 print(f"Assistant: {content}")
                 play_audio(content)
 
