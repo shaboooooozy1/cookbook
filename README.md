@@ -52,7 +52,13 @@ Disclaimer: Examples contributed by the community and partners do not represent 
 | [moderation_classifier.ipynb](mistral/classifier_factory/moderation_classifier.ipynb) | fine-tuning, classifier | Fine-tuning a classifier for moderation. |
 | [pixtral_finetune_on_satellite_data.ipynb](mistral/fine_tune/pixtral_finetune_on_satellite_data.ipynb) | fine-tuning, image processing, batch | Fine-tuning a Pixtral-12B for satellite images classification. |
 
+## LeChat Custom MCP Servers
 
+| Server                                                                                          | Category                | Description                                                        |
+|-------------------------------------------------------------------------------------------------|-------------------------|--------------------------------------------------------------------|
+| [tic-tac-toe](mistral/lechat_custom_mcp_server/tic-tac-toe/)                                   | MCP, games, agents      | Play tic-tac-toe against Mistral AI inside LeChat                  |
+| [weather](mistral/lechat_custom_mcp_server/weather/)                                           | MCP, tools, function calling | Weather lookups, comparisons, and AI-powered travel recommendations |
+| [notes](mistral/lechat_custom_mcp_server/notes/)                                               | MCP, tools, productivity | AI-powered note-taking with summarization and action-item extraction |
 
 ## Third Party Tools
 
