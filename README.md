@@ -28,7 +28,7 @@ Disclaimer: Examples contributed by the community and partners do not represent 
 | [quickstart.ipynb](quickstart.ipynb)                                           | chat, embeddings             | Basic quickstart with chat and embeddings with Mistral AI API                    |
 | [prompting_capabilities.ipynb](mistral/prompting/prompting_capabilities.ipynb) | prompting                    | Write prompts for classification, summarization, personalization, and evaluation |
 | [basic_RAG.ipynb](mistral/rag/basic_RAG.ipynb)                                 | RAG                          | RAG from scratch with Mistral AI API                                             |
-| [embeddings.ipynb](mistral/embeddings/embeddings.ipynb)                        | embeddings                   | Use Mistral embeddings API for classification and clustering                     |                                           |
+| [embeddings.ipynb](mistral/embeddings/embeddings.ipynb)                        | embeddings                   | Use Mistral embeddings API for classification and clustering                     |
 | [function_calling.ipynb](mistral/function_calling/function_calling.ipynb)      | function calling             | Use Mistral API for function calling                                             |
 | [text_to_SQL.ipynb](mistral/function_calling/text_to_SQL.ipynb)      | function calling             | Use Mistral API for function calling on a multi tables text to SQL usecase                                             |
 | [evaluation.ipynb](mistral/evaluation/evaluation.ipynb)                        | evaluation                   | Evaluate models with Mistral API                                                 |
@@ -52,8 +52,6 @@ Disclaimer: Examples contributed by the community and partners do not represent 
 | [moderation_classifier.ipynb](mistral/classifier_factory/moderation_classifier.ipynb) | fine-tuning, classifier | Fine-tuning a classifier for moderation. |
 | [pixtral_finetune_on_satellite_data.ipynb](mistral/fine_tune/pixtral_finetune_on_satellite_data.ipynb) | fine-tuning, image processing, batch | Fine-tuning a Pixtral-12B for satellite images classification. |
 
-
-
 ## Third Party Tools
 
 | Tools                                                                                                                 | Category                        | Party      |
@@ -67,7 +65,7 @@ Disclaimer: Examples contributed by the community and partners do not represent 
 | [CAMEL Graph RAG with Mistral Models](third_party/CAMEL_AI/camel_graph_rag.ipynb)                                     | multi-agent, tool, data gen     | CAMEL-AI.org|
 | [CAMEL Role-Playing Scraper](third_party/CAMEL_AI/camel_roleplaying_scraper.ipynb)                                    | multi-agent, tool, data gen     | CAMEL-AI.org|
 | [Chainlit - Mistral reasoning.ipynb](third_party/Chainlit/Chainlit_Mistral_reasoning.ipynb)                           | UI chat, tool calling           | Chainlit   |
-| [chroma_mistral_embed_fn.ipynb](third_party/ChromaDB/chroma_mistral_embed_fn.ipynb)                              | embeddings, vector DB | Chroma
+| [chroma_mistral_embed_fn.ipynb](third_party/ChromaDB/chroma_mistral_embed_fn.ipynb)                              | embeddings, vector DB | Chroma     |
 | [corrective_rag_mistral.ipynb](third_party/langchain/corrective_rag_mistral.ipynb)                                    | RAG                             | Langchain  |
 | [distilabel_synthetic_dpo_dataset.ipynb](third_party/argilla/distilabel_synthetic_dpo_dataset.ipynb)                  | synthetic data                  | Argilla    |
 | [E2B Code Interpreter SDK with Codestral](third_party/E2B_Code_Interpreting)                                          | tool, agent                     | E2B        |
@@ -107,4 +105,4 @@ Disclaimer: Examples contributed by the community and partners do not represent 
 | [Build a bank support agent with Pydantic AI and Mistral AI](third_party/PydanticAI/pydantic_bank_support_agent.ipynb)| Agent                           | Pydantic   |
 | [Mistral and MLflow Tracing](third_party/MLflow/mistral-mlflow-tracing.ipynb)                                         | Tracing, Observability          | MLflow     |
 | [Mistral OCR with Gradio](third_party/gradio/MistralOCR.md)                                                           | OCR                             | Gradio     |
-| [prompt_optimization.ipynb](third_party/metagpt/prompt_optimization.ipynb)) |Prompting | Optimizing prompts without any supervision
+| [prompt_optimization.ipynb](third_party/metagpt/prompt_optimization.ipynb) | Prompting | Optimizing prompts without any supervision |
