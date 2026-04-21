@@ -9,10 +9,11 @@ This is the **Mistral AI Cookbook** — a collection of examples, guides, and in
 ```
 cookbook/
 ├── quickstart.ipynb              # Entry-point notebook (chat, embeddings basics)
+├── CONTRIBUTING_GUIDE.md         # Contribution guidelines and security setup
 ├── concept-deep-dive/            # Educational deep-dives (prompting, quantization, sampling, tokenization)
 ├── mistral/                      # Official Mistral examples organized by capability
 │   ├── agents/                   # Agent implementations
-│   │   ├── agents_api/           # Framework-based (Mistral Agents API)
+│   │   ├── agents_api/           # Framework-based (Mistral Agents API) — 6 projects
 │   │   └── non_framework/        # Custom agent implementations
 │   ├── classifier_factory/       # Fine-tuning classifiers
 │   ├── data_generation/          # Synthetic data generation
@@ -26,7 +27,7 @@ cookbook/
 │   ├── ocr/                      # OCR and document understanding
 │   ├── prompting/                # Prompting techniques
 │   └── rag/                      # RAG implementations
-├── third_party/                  # 36 third-party integrations (LlamaIndex, LangChain, ChromaDB, etc.)
+├── third_party/                  # 34 third-party integrations (LlamaIndex, LangChain, ChromaDB, etc.)
 ├── data/                         # Shared data files (CSV, SQL, JSONL)
 ├── images/                       # Screenshots and diagrams
 └── gif/                          # Demo GIFs
@@ -36,8 +37,8 @@ cookbook/
 
 ### File Formats
 - **Notebooks (.ipynb)**: Primary format for examples (~94 notebooks). Must be runnable on Google Colab.
-- **Python scripts (.py)**: Used in agent projects for tools, backends, and MCP servers.
-- **Markdown (.md)**: Used for concept deep-dives and README files within subdirectories.
+- **Python scripts (.py)**: Used in agent projects for tools, backends, and MCP servers (~46 files).
+- **Markdown (.md)**: Used for concept deep-dives and README files within subdirectories (~54 files).
 
 ### Naming Conventions
 - Snake_case for notebooks and directories: `basic_RAG.ipynb`, `function_calling/`
@@ -66,16 +67,19 @@ pip install pre-commit
 pre-commit install
 ```
 
-Hooks enforced (`.pre-commit-config.yaml`):
+Hooks enforced (`.pre-commit-config.yaml`, using `pre-commit-hooks` v4.5.0):
 - `detect-private-key` — blocks commits containing API keys or credentials
-- `check-merge-conflict`, `check-yaml`, `check-toml` — format validation
+- `check-byte-order-marker` — prevents BOM characters
+- `check-merge-conflict` — catches unresolved merge conflict markers
+- `check-symlinks` — validates symlinks
+- `check-yaml`, `check-toml` — format validation
 - `trailing-whitespace`, `end-of-file-fixer`, `mixed-line-ending` — formatting
 
 **Never commit API keys, secrets, or credentials.** Use environment variables instead (e.g., `os.environ["MISTRAL_API_KEY"]`).
 
 ### CI/CD
-- **security-check.yml**: Runs `detect-private-key` on all pushes/PRs to main/develop
-- **trigger-docs-update.yml**: Pushes to main trigger a webhook to update `mistralai/platform-docs`
+- **security-check.yml**: Runs `detect-private-key` on all pushes/PRs to main/develop (Python 3.9)
+- **trigger-docs-update.yml**: Pushes to main trigger a webhook to update `mistralai/platform-docs` via `COOKBOOKS_UPDATE_KEY` secret
 
 ## Development Workflow
 
@@ -95,12 +99,23 @@ Hooks enforced (`.pre-commit-config.yaml`):
 ## Project Organization Patterns
 
 ### Agent Projects (`mistral/agents/`)
-Agent projects under `agents_api/` follow a common structure:
+Agent projects under `agents_api/` include 6 projects with varying structures:
+
+| Project | pyproject.toml | requirements.txt | Entry point |
+|---------|:-:|:-:|---|
+| financial_analyst | — | — | app.py |
+| food_diet_companion | Yes | Yes | — |
+| github_agent | — | — | — |
+| multi_agents_data_analysis | Yes | — | app.py |
+| prd_linear_ticket | — | — | app.py |
+| travel_assistant | Yes | — | — |
+
+Common project structure:
 ```
 agent_name/
-├── pyproject.toml        # Dependencies and project config
-├── uv.lock               # Locked dependencies
-├── requirements.txt      # Alternative dependency file
+├── pyproject.toml        # Dependencies and project config (when present)
+├── uv.lock               # Locked dependencies (when present)
+├── requirements.txt      # Alternative dependency file (when present)
 ├── README.md             # Usage instructions
 ├── app.py or main.py     # Entry point
 ├── tools/                # Tool implementations (MCP servers, utilities)
@@ -109,6 +124,8 @@ agent_name/
 ```
 
 ### Third-Party Integrations (`third_party/`)
+34 integrations including: Azure_AI_Search, CAMEL_AI, Chainlit, ChromaDB, E2B_Code_Interpreting, Haystack, Indexify, Langfuse, Langtrace, LlamaIndex, MLflow, Maxim, Milvus, MongoDB, Neo4j, Neon, Ollama, Phoenix, Pinecone, Pixeltable, PydanticAI, argilla, gradio, langchain, mesop, metagpt, openlit, panel, phospho, solara, streamlit, wandb, x-cmd, and MS_Autogen_pgsql.
+
 Each integration typically contains:
 ```
 ToolName/
@@ -117,7 +134,14 @@ ToolName/
 ```
 
 ### Concept Deep-Dives (`concept-deep-dive/`)
-Educational content organized by topic with markdown docs and visual assets (PNG diagrams).
+Educational content organized by topic (prompting, quantization, sampling, tokenization) with markdown docs and visual assets (PNG diagrams).
+
+### Data Files (`data/`)
+Shared datasets used by notebooks:
+- `northwind-schema.sql` — SQL schema for function calling examples
+- `northwind-queries.jsonl` — JSONL query samples
+- `Symptom2Disease.csv` — Classification dataset
+- `LeetCodeTSNE.csv` — Embedding visualization dataset
 
 ## Common Tools and Libraries
 - `mistralai` — Mistral Python SDK
