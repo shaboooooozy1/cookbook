@@ -1,9 +1,9 @@
-chainlit==2.3.0
-python-dotenv==1.1.0
-mistralai==1.9.2
-pydantic==2.10.5
+chainlit==2.11.1
+python-dotenv==1.2.2
+mistralai==1.12.4
+pydantic==2.13.4
 loguru==0.7.3
-tavily-python==0.5.0
-typing-extensions==4.12.2
-anyio==4.8.0
+tavily-python==0.7.26
+typing-extensions==4.16.0
+anyio==4.14.2
 annotated-types==0.7.0 
