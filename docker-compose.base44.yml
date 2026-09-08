@@ -1,0 +1,27 @@
+services:
+  jupyter:
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - ./:/app
+    ports:
+      - "3000:3000"
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+    env_file:
+      - /run/base44/app.env
+    command: >
+      bash -c "
+        pip install --no-cache-dir jupyterlab mistralai &&
+        jupyter lab
+          --ip=0.0.0.0
+          --port=3000
+          --no-browser
+          --ServerApp.token=''
+          --ServerApp.password=''
+          --ServerApp.allow_origin='*'
+          --ServerApp.allow_remote_access=True
+          --ServerApp.tornado_settings='{\"headers\": {\"Content-Security-Policy\": \"frame-ancestors *;\"}}'
+          --notebook-dir=/app
+      "
+    restart: unless-stopped

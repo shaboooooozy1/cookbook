@@ -1,0 +1,13 @@
+{
+  "previewPort": 3000,
+  "healthPath": "/",
+  "startCommand": "docker compose -f docker-compose.base44.yml up -d",
+  "secrets": [
+    {
+      "name": "MISTRAL_API_KEY",
+      "description": "Mistral AI API key from https://console.mistral.ai/ — needed to run the notebooks that call Mistral models. The Jupyter server starts without it, but notebook cells that call the API will fail until it's set.",
+      "requiredAtBoot": false,
+      "generatedForDevelopment": true
+    }
+  ]
+}
