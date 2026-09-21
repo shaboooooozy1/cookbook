@@ -62,24 +62,29 @@ pip install -r requirements.txt
 # Set your Mistral API key
 export MISTRAL_API_KEY="your-api-key-here"
 
+# Set the shared secret that clients must send as `Authorization: Bearer <token>`
+export MCP_AUTH_TOKEN="$(openssl rand -hex 32)"
+
 # Run the MCP server
 python mcp_server.py
 ```
 
-The server starts on port 7860 with SSE transport.
+The server starts on port 7860 with SSE transport. It refuses to start if `MCP_AUTH_TOKEN` is unset, and answers `401` to any request to `/sse` or `/messages` that does not carry the token.
 
 ## Deploy to Hugging Face Spaces
 
+> **Warning:** without the bearer token, the `/sse` endpoint is callable by anyone who knows the Space URL: they can read and delete every stored note and bill your Mistral API key. Keep `MCP_AUTH_TOKEN` secret and consider making the Space private.
+
 1. Create a new Space on [Hugging Face](https://huggingface.co/spaces) with **Docker** SDK
 2. Upload the project files
-3. Add `MISTRAL_API_KEY` as a Space secret
+3. Add `MISTRAL_API_KEY` and `MCP_AUTH_TOKEN` as Space secrets
 4. The Space will build and run automatically
 
 ## Connect to LeChat
 
 1. Open [LeChat](https://chat.mistral.ai)
 2. Go to **Settings > MCP Servers**
-3. Add your deployed server URL (e.g., `https://your-space.hf.space/sse`)
+3. Add your deployed server URL (e.g., `https://your-space.hf.space/sse`) and configure the connector with the header `Authorization: Bearer <MCP_AUTH_TOKEN>`
 4. Start chatting! Try: *"Create a note about today's standup meeting"*
 
 ## Example Workflow

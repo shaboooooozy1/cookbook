@@ -29,7 +29,7 @@ LeChat ←→ SSE Transport ←→ Your MCP Server ←→ Game Logic + Mistral A
 tictactoe-mcp-server/
 ├── mcp_server.py      # Main MCP server code
 ├── app.py             # Game logic and Flask API
-├── requirements.txt   # Python dependencies  
+├── requirements.txt   # Python dependencies
 ├── Dockerfile        # For Hugging Face deployment
 ```
 
@@ -38,7 +38,7 @@ tictactoe-mcp-server/
 Create `requirements.txt` with these dependencies:
 
 ```txt
-fastmcp
+mcp
 flask
 flask-cors
 mistralai
@@ -79,18 +79,18 @@ When your MCP server is deployed, you'll have:
 - **Game state** needs to persist across interactions
 
 A simple single-game approach won't work because:
-❌ Users would interfere with each other's games  
-❌ No way to resume games later  
-❌ Can't support multiple concurrent games  
+❌ Users would interfere with each other's games
+❌ No way to resume games later
+❌ Can't support multiple concurrent games
 ❌ State gets lost between MCP tool calls
 
 ### The Solution: Room-Based Sessions
 
 We create a **"Room"** for each game session:
-✅ **Isolated state** - Each game has its own board and history  
-✅ **Unique identifiers** - Room IDs prevent game conflicts  
-✅ **Persistent sessions** - Games survive between tool calls  
-✅ **Multi-room support** - Users can play multiple games  
+✅ **Isolated state** - Each game has its own board and history
+✅ **Unique identifiers** - Room IDs prevent game conflicts
+✅ **Persistent sessions** - Games survive between tool calls
+✅ **Multi-room support** - Users can play multiple games
 ✅ **Easy cleanup** - Old rooms can be removed when inactive
 
 ### What We're Building
@@ -100,7 +100,7 @@ We create a **"Room"** for each game session:
 User 1 ─┬─ Room ABC123 (Active game vs AI)
          └─ Room DEF456 (Finished game)
 
-User 2 ─┬─ Room GHI789 (Their current game)  
+User 2 ─┬─ Room GHI789 (Their current game)
          └─ Room JKL012 (Another game)
 
 User 3 ─── Room MNO345 (New game starting)
@@ -133,7 +133,7 @@ The `Room` class is the heart of our game logic. It encapsulates everything need
 
 ##### What the Room Class Does:
 - **State Management**: Tracks board positions, whose turn, win/draw status
-- **Session Isolation**: Each room is independent - no games interfere with each other  
+- **Session Isolation**: Each room is independent - no games interfere with each other
 - **AI Integration**: Coordinates with Mistral AI for intelligent gameplay
 - **Chat System**: Maintains conversation history between human and AI
 - **Data Persistence**: Survives between MCP tool calls
@@ -146,14 +146,14 @@ import os
 import json
 import uuid
 import time
-from flask import Flask, request, jsonify, render_template, send_from_directory
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 import logging
 from mistralai import Mistral
 
 # Flask app setup
 app = Flask(__name__)
-CORS(app)
+CORS(app, origins=["http://localhost:7860", "http://127.0.0.1:7860"])
 
 # Logging setup
 logging.basicConfig(level=logging.INFO)
@@ -178,7 +178,7 @@ class Room:
         self.created = time.time()
         self.last_activity = time.time()
         self.moves_count = 0
-        
+
         # Add welcome message
         self.chat_history.append({
             'sender': 'ai',
@@ -193,14 +193,14 @@ Now we'll add the core methods that make our tic-tac-toe game work. Each method 
 
 ###### Methods We're Adding:
 - **`make_move(position, player)`**: Validates and executes moves, checks for wins
-- **`check_winner()`**: Determines if someone has won the game  
+- **`check_winner()`**: Determines if someone has won the game
 - **`add_chat_message(message, sender)`**: Manages conversation history
 - **`to_markdown()`**: Creates beautiful game display for users
 - **`to_dict()`**: Converts room to JSON format for API responses
 
 ###### Why These Methods?
 - **Game Rules**: `make_move()` and `check_winner()` enforce tic-tac-toe rules
-- **User Experience**: `to_markdown()` makes games visually appealing  
+- **User Experience**: `to_markdown()` makes games visually appealing
 - **Communication**: `add_chat_message()` enables AI personality
 - **API Integration**: `to_dict()` provides structured data for MCP tools
 
@@ -211,11 +211,11 @@ Add these methods to the `Room` class:
         """Make a move on the board"""
         if self.game_status != 'active' or self.board[position] != '':
             return False
-        
+
         self.board[position] = player
         self.moves_count += 1
         self.last_activity = time.time()
-        
+
         # Check for winner
         if self.check_winner():
             self.game_status = 'won'
@@ -224,9 +224,9 @@ Add these methods to the `Room` class:
             self.game_status = 'draw'
         else:
             self.current_player = 'O' if player == 'X' else 'X'
-        
+
         return True
-    
+
     def check_winner(self):
         """Check if there's a winner"""
         win_patterns = [
@@ -234,13 +234,13 @@ Add these methods to the `Room` class:
             [0, 3, 6], [1, 4, 7], [2, 5, 8],  # columns
             [0, 4, 8], [2, 4, 6]              # diagonals
         ]
-        
+
         for pattern in win_patterns:
             a, b, c = pattern
             if self.board[a] and self.board[a] == self.board[b] == self.board[c]:
                 return True
         return False
-    
+
     def add_chat_message(self, message, sender):
         """Add a chat message to history"""
         self.chat_history.append({
@@ -249,12 +249,12 @@ Add these methods to the `Room` class:
             'timestamp': time.time()
         })
         self.last_activity = time.time()
-    
+
     def to_markdown(self):
         """Convert game state to markdown for display"""
         markdown = f"# Game Room: {self.id}\n"
         markdown += f"## Status: "
-        
+
         if self.game_status == 'won':
             winner_name = "You" if self.winner == 'X' else "Mistral AI"
             markdown += f"Game Over - {winner_name} wins! 🎉\n"
@@ -263,9 +263,9 @@ Add these methods to the `Room` class:
         else:
             turn_name = "Your turn" if self.current_player == 'X' else "Mistral's turn"
             markdown += f"{turn_name} ({self.current_player} to play)\n"
-        
+
         markdown += f"Moves: {self.moves_count}/9\n\n"
-        
+
         # Board representation
         markdown += "```\n"
         for i in range(0, 9, 3):
@@ -274,7 +274,7 @@ Add these methods to the `Room` class:
             if i < 6:
                 markdown += "-----------\n"
         markdown += "```\n\n"
-        
+
         # Recent chat history
         if self.chat_history:
             markdown += "## Recent Chat\n"
@@ -282,9 +282,9 @@ Add these methods to the `Room` class:
             for msg in recent_messages:
                 sender_name = "**You:**" if msg['sender'] == 'user' else "**Mistral AI:**"
                 markdown += f"{sender_name} {msg['message']}\n"
-        
+
         return markdown
-    
+
     def to_dict(self):
         """Convert room to dictionary"""
         return {
@@ -319,14 +319,14 @@ The AI opponent is what makes this game engaging! We need two functions to handl
 
 ###### Why AI Integration?
 - **Intelligent Opponent**: AI analyzes the board and makes strategic moves
-- **Personality**: AI responds with witty comments and competitive banter  
+- **Personality**: AI responds with witty comments and competitive banter
 - **Engagement**: Makes the game fun and interactive, not just mechanical
 - **Context Awareness**: AI sees current game state and responds appropriately
 
 ###### How It Works:
 1. **Game State Analysis**: AI receives current board layout
 2. **Strategic Thinking**: AI evaluates possible moves and picks the best one
-3. **Personality Response**: AI adds a comment about the move or situation  
+3. **Personality Response**: AI adds a comment about the move or situation
 4. **JSON Response**: Returns structured data with move and message
 
 Add these functions for AI opponent:
@@ -340,7 +340,7 @@ def get_ai_move_for_room(room):
         board_string += f"{row[0]} | {row[1]} | {row[2]}\n"
         if i < 6:
             board_string += "---------\n"
-    
+
     messages = [
         {
             "role": "system",
@@ -368,14 +368,14 @@ Board positions:
             "content": f"Current board:\n{board_string}\n\nBoard array: {room.board}"
         }
     ]
-    
+
     response = client.chat.complete(
         model="mistral-large-latest",
         messages=messages,
         temperature=0.1,
         response_format={"type": "json_object"}
     )
-    
+
     return json.loads(response.choices[0].message.content)
 
 def get_ai_chat_for_room(room, user_message):
@@ -386,7 +386,7 @@ def get_ai_chat_for_room(room, user_message):
         board_string += f"{row[0]} | {row[1]} | {row[2]}\n"
         if i < 6:
             board_string += "---------\n"
-    
+
     messages = [
         {
             "role": "system",
@@ -403,12 +403,12 @@ Keep responses under 50 words. Use emojis occasionally. Don't make game moves in
             "content": user_message
         }
     ]
-    
+
     response = client.chat.complete(
         model="mistral-large-latest",
         messages=messages
     )
-    
+
     return response.choices[0].message.content
 ```
 
@@ -419,7 +419,7 @@ Now we create REST API endpoints so you can test the game logic locally before a
 ##### Endpoints We're Building:
 - **`POST /rooms`**: Creates a new game room - starts a fresh game
 - **`GET /rooms/<room_id>`**: Gets current room state - check game status anytime
-- **`POST /rooms/<room_id>/move`**: Makes a move - handles human move + AI response  
+- **`POST /rooms/<room_id>/move`**: Makes a move - handles human move + AI response
 - **`POST /rooms/<room_id>/chat`**: Sends chat message - talk with AI during game
 
 ##### Why These Endpoints?
@@ -430,7 +430,7 @@ Now we create REST API endpoints so you can test the game logic locally before a
 
 ##### API Design Philosophy:
 - **RESTful**: Standard HTTP methods for predictable behavior
-- **Room-Centric**: All operations revolve around room IDs  
+- **Room-Centric**: All operations revolve around room IDs
 - **Rich Responses**: Include both raw data and formatted markdown
 - **Error Handling**: Clear error messages for debugging
 
@@ -455,7 +455,7 @@ def get_room(room_id):
     """Get room state"""
     if room_id not in rooms:
         return jsonify({'error': 'Room not found'}), 404
-    
+
     room = rooms[room_id]
     return jsonify({
         'room_id': room_id,
@@ -468,18 +468,18 @@ def make_room_move(room_id):
     """Make a move in the game"""
     if room_id not in rooms:
         return jsonify({'error': 'Room not found'}), 404
-    
+
     room = rooms[room_id]
-    data = request.json
+    data = request.get_json(silent=True) or {}
     position = data.get('position')
-    
-    if position is None or position < 0 or position > 8:
+
+    if not isinstance(position, int) or isinstance(position, bool) or not 0 <= position <= 8:
         return jsonify({'error': 'Invalid position'}), 400
-    
+
     # Make human move
     if not room.make_move(position, 'X'):
         return jsonify({'error': 'Invalid move'}), 400
-    
+
     # Check if game ended
     if room.game_status != 'active':
         return jsonify({
@@ -487,7 +487,7 @@ def make_room_move(room_id):
             'markdown': room.to_markdown(),
             'ai_move': None
         })
-    
+
     # Get AI move
     try:
         ai_response = get_ai_move_for_room(room)
@@ -497,7 +497,7 @@ def make_room_move(room_id):
                 room.make_move(ai_move, 'O')
                 if 'message' in ai_response:
                     room.add_chat_message(ai_response['message'], 'ai')
-        
+
         return jsonify({
             'room_data': room.to_dict(),
             'markdown': room.to_markdown(),
@@ -512,22 +512,22 @@ def room_chat(room_id):
     """Send a chat message"""
     if room_id not in rooms:
         return jsonify({'error': 'Room not found'}), 404
-    
+
     room = rooms[room_id]
-    data = request.json
+    data = request.get_json(silent=True) or {}
     user_message = data.get('message', '')
-    
-    if not user_message.strip():
+
+    if not isinstance(user_message, str) or not user_message.strip():
         return jsonify({'error': 'Empty message'}), 400
-    
+
     # Add user message
     room.add_chat_message(user_message, 'user')
-    
+
     # Get AI response
     try:
         ai_response = get_ai_chat_for_room(room, user_message)
         room.add_chat_message(ai_response, 'ai')
-        
+
         return jsonify({
             'room_data': room.to_dict(),
             'markdown': room.to_markdown(),
@@ -538,8 +538,10 @@ def room_chat(room_id):
         return jsonify({'error': 'AI chat failed'}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=7860, debug=True)
+    app.run(host=os.getenv('HOST', '127.0.0.1'), port=int(os.getenv('PORT', '7860')), debug=os.getenv('FLASK_DEBUG') == '1')
 ```
+
+The development server listens on loopback only and runs without the debugger; set `HOST=0.0.0.0` and `FLASK_DEBUG=1` explicitly if you need the old behaviour.
 
 #### Step 6: Local Testing
 
@@ -591,7 +593,7 @@ curl http://localhost:7860/rooms/YOUR_ROOM_ID
 
 **🎉 Success!** Your game logic foundation is solid. You now have:
 - A working tic-tac-toe engine
-- AI opponent integration  
+- AI opponent integration
 - REST API for testing
 - Rich data formatting
 - Proper error handling
@@ -612,9 +614,9 @@ MCP (Model Context Protocol) is a bridge between AI assistants and your applicat
 - **Formats Responses**: Converts your data into formats AI assistants understand
 
 MCP provides:
-✅ **Tool Interface** - AI can directly call game functions  
+✅ **Tool Interface** - AI can directly call game functions
 ✅ **Self-Documenting** - Each tool explains when to use it
-✅ **Session State** - Maintains game context between calls  
+✅ **Session State** - Maintains game context between calls
 ✅ **Rich Responses** - Formatted data that AI can present beautifully
 
 #### The Translation Layer
@@ -622,7 +624,7 @@ MCP provides:
 LeChat: "I want to play tic-tac-toe"
     ↓
 MCP: Calls create_room() tool
-    ↓  
+    ↓
 Your Game Logic: Creates new Room object
     ↓
 MCP: Returns formatted response with game board
@@ -634,21 +636,48 @@ LeChat: Shows beautiful tic-tac-toe board to user
 
 ##### What We're Building
 - **FastMCP Server**: The core MCP protocol handler
-- **Session State**: Tracks current user's active game  
+- **Session State**: Tracks current user's active game
 - **Tool Functions**: 6 functions that wrap our game logic
 - **SSE Transport**: Server-Sent Events for real-time communication
 
 Create `mcp_server.py`:
 
 ```python
+import hmac
 import os
 import asyncio
+import uvicorn
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
+from starlette.datastructures import Headers
+from starlette.responses import JSONResponse
 from app import Room, rooms, get_ai_move_for_room, get_ai_chat_for_room
 
 # Load environment variables
 load_dotenv()
+
+# --- Bearer-token auth for the SSE transport ---
+# The /sse and /messages endpoints are otherwise callable by anyone who knows the URL.
+MCP_AUTH_TOKEN = os.getenv("MCP_AUTH_TOKEN")
+if not MCP_AUTH_TOKEN:
+    raise SystemExit("MCP_AUTH_TOKEN is not set; refusing to start an unauthenticated MCP server")
+
+
+class BearerAuthMiddleware:
+    """Pure ASGI middleware: reject HTTP requests that lack the shared bearer token."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http":
+            supplied = Headers(scope=scope).get("authorization", "")
+            if not hmac.compare_digest(supplied, f"Bearer {MCP_AUTH_TOKEN}"):
+                response = JSONResponse({"error": "unauthorized"}, status_code=401)
+                await response(scope, receive, send)
+                return
+        await self.app(scope, receive, send)
+
 
 # Initialize MCP server
 mcp = FastMCP(
@@ -675,7 +704,7 @@ Now we'll create the foundational MCP tools that handle game room lifecycle.
 ##### How They Work:
 1. **AI Decides**: Based on user input, AI chooses which tool to call
 2. **MCP Validates**: Checks parameters and session state
-3. **Game Logic**: Calls our Room class methods  
+3. **Game Logic**: Calls our Room class methods
 4. **Response Formatting**: Converts results to AI-friendly format
 5. **Display**: AI presents formatted results to user
 
@@ -693,10 +722,10 @@ def create_room() -> dict:
     try:
         room = Room()
         rooms[room.id] = room
-        
+
         # Set as active room for this session
         current_session['active_room_id'] = room.id
-        
+
         return {
             "status": "success",
             "room_id": room.id,
@@ -728,21 +757,21 @@ def get_room_state(room_id: str = None) -> dict:
     try:
         # Use provided room_id or current active room
         target_room_id = room_id or current_session.get('active_room_id')
-        
+
         if not target_room_id:
             return {
                 "status": "error",
                 "message": "No active room. Create a room first using create_room()."
             }
-        
+
         if target_room_id not in rooms:
             return {
                 "status": "error",
                 "message": f"Room {target_room_id} not found. It may have been cleaned up."
             }
-        
+
         room = rooms[target_room_id]
-        
+
         return {
             "status": "success",
             "room_id": target_room_id,
@@ -759,7 +788,7 @@ def get_room_state(room_id: str = None) -> dict:
         }
 ```
 
-#### Step 3: Implement Game Play Tools  
+#### Step 3: Implement Game Play Tools
 
 This is where the magic happens! We'll create the tools that handle actual gameplay.
 
@@ -770,7 +799,7 @@ This is where the magic happens! We'll create the tools that handle actual gamep
 1. **Validation**: Check if move is legal (valid position, player's turn, game active)
 2. **Human Move**: Place X on the board, check for win/draw
 3. **AI Response**: If game continues, get AI's counter-move with personality
-4. **AI Move**: Place O on board, check for AI win/draw  
+4. **AI Move**: Place O on board, check for AI win/draw
 5. **Formatting**: Create beautiful response with game state and AI trash talk
 6. **Return**: Send everything back for AI to display to user
 
@@ -793,42 +822,42 @@ async def make_move(position: int, room_id: str = None) -> dict:
     try:
         # Use provided room_id or current active room
         target_room_id = room_id or current_session.get('active_room_id')
-        
+
         if not target_room_id:
             return {
                 "status": "error",
                 "message": "No active room. Create a room first using create_room()."
             }
-        
+
         if target_room_id not in rooms:
             return {
                 "status": "error",
                 "message": f"Room {target_room_id} not found."
             }
-        
+
         room = rooms[target_room_id]
-        
+
         # Validate move
         if position < 0 or position > 8:
             return {
                 "status": "error",
                 "message": "Invalid position. Use 0-8 (left to right, top to bottom)."
             }
-        
+
         if room.game_status != 'active':
             return {
                 "status": "error",
                 "message": f"Game is over. Status: {room.game_status}",
                 "markdown_state": room.to_markdown()
             }
-        
+
         if room.current_player != 'X':
             return {
                 "status": "error",
                 "message": "It's not your turn! Wait for AI to move.",
                 "markdown_state": room.to_markdown()
             }
-        
+
         # Make human move
         if not room.make_move(position, 'X'):
             return {
@@ -836,16 +865,16 @@ async def make_move(position: int, room_id: str = None) -> dict:
                 "message": f"Invalid move! Position {position} may already be occupied.",
                 "markdown_state": room.to_markdown()
             }
-        
+
         result_message = f"✅ You played X at position {position}\n\n"
-        
+
         # Check if game ended after human move
         if room.game_status != 'active':
             if room.winner == 'X':
                 result_message += "🎉 Congratulations! You won!\n\n"
             else:
                 result_message += "🤝 It's a draw!\n\n"
-            
+
             result_message += room.to_markdown()
             return {
                 "status": "success",
@@ -853,7 +882,7 @@ async def make_move(position: int, room_id: str = None) -> dict:
                 "game_over": True,
                 "winner": room.winner
             }
-        
+
         # Get AI move
         try:
             ai_response = get_ai_move_for_room(room)
@@ -863,13 +892,13 @@ async def make_move(position: int, room_id: str = None) -> dict:
                     room.make_move(ai_move, 'O')
                     if 'message' in ai_response:
                         room.add_chat_message(ai_response['message'], 'ai')
-                
+
                 result_message += f"🤖 Mistral AI played O at position {ai_response['move']}\n"
                 if 'message' in ai_response:
                     result_message += f"💬 Mistral says: \"{ai_response['message']}\"\n\n"
                 else:
                     result_message += "\n"
-                
+
                 # Check if AI won
                 if room.game_status == 'won' and room.winner == 'O':
                     result_message += "💀 Mistral AI wins this round!\n\n"
@@ -877,12 +906,12 @@ async def make_move(position: int, room_id: str = None) -> dict:
                     result_message += "🤝 It's a draw!\n\n"
             else:
                 result_message += "⚠️ AI move failed, but you can continue\n\n"
-                
+
         except Exception as e:
             result_message += f"⚠️ AI move error: {str(e)}\n\n"
-        
+
         result_message += room.to_markdown()
-        
+
         return {
             "status": "success",
             "message": result_message,
@@ -890,7 +919,7 @@ async def make_move(position: int, room_id: str = None) -> dict:
             "winner": room.winner if room.game_status == 'won' else None,
             "your_turn": room.current_player == 'X' and room.game_status == 'active'
         }
-        
+
     except Exception as e:
         return {
             "status": "error",
@@ -904,7 +933,7 @@ Now we'll add the remaining tools that make the game experience complete and use
 
 ##### Remaining Tools:
 - **`send_chat(message, room_id)`**: Talk with AI opponent during games
-- **`list_rooms()`**: See all active game sessions  
+- **`list_rooms()`**: See all active game sessions
 - **`get_help()`**: Show instructions and available commands
 
 Complete the MCP server with chat and helper tools:
@@ -923,38 +952,38 @@ async def send_chat(message: str, room_id: str = None) -> dict:
     global current_session
     try:
         target_room_id = room_id or current_session.get('active_room_id')
-        
+
         if not target_room_id:
             return {
                 "status": "error",
                 "message": "No active room. Create a room first using create_room()."
             }
-        
+
         if target_room_id not in rooms:
             return {
                 "status": "error",
                 "message": f"Room {target_room_id} not found."
             }
-        
+
         room = rooms[target_room_id]
-        
+
         # Add user message
         room.add_chat_message(message, 'user')
-        
+
         # Get AI response
         ai_response = get_ai_chat_for_room(room, message)
         room.add_chat_message(ai_response, 'ai')
-        
+
         result_message = f"💬 **You:** {message}\n💬 **Mistral AI:** {ai_response}\n\n"
         result_message += room.to_markdown()
-        
+
         return {
             "status": "success",
             "message": result_message,
             "your_message": message,
             "ai_response": ai_response
         }
-        
+
     except Exception as e:
         return {
             "status": "error",
@@ -976,7 +1005,7 @@ def list_rooms() -> dict:
                 "active_rooms": [],
                 "count": 0
             }
-        
+
         room_list = []
         for room_id, room in rooms.items():
             room_info = {
@@ -989,12 +1018,12 @@ def list_rooms() -> dict:
                 "is_active": current_session.get('active_room_id') == room_id
             }
             room_list.append(room_info)
-        
+
         active_room_id = current_session.get('active_room_id')
         message = f"Found {len(room_list)} active rooms."
         if active_room_id:
             message += f" Current active room: {active_room_id}"
-        
+
         return {
             "status": "success",
             "message": message,
@@ -1063,7 +1092,7 @@ Finally, we'll add the code that actually starts our MCP server and makes it ava
 ##### What Server Startup Does:
 - **Initializes MCP**: Starts the FastMCP server instance
 - **Binds to Port**: Makes server accessible on port 7860 (Hugging Face standard)
-- **Enables SSE**: Sets up Server-Sent Events transport for real-time communication  
+- **Enables SSE**: Sets up Server-Sent Events transport for real-time communication
 - **Logs Status**: Shows what tools are available and confirms readiness
 
 Add the server startup code:
@@ -1089,7 +1118,9 @@ if __name__ == "__main__":
     print()
     print("This MCP server is ready for LeChat integration!")
     print("Running Tic-Tac-Toe MCP server with SSE transport")
-    mcp.run(transport="sse")
+    app = mcp.sse_app()
+    app.add_middleware(BearerAuthMiddleware)
+    uvicorn.run(app, host=mcp.settings.host, port=mcp.settings.port)
 ```
 
 #### Understanding the MCP Tools
@@ -1101,7 +1132,7 @@ Now let's understand how our 6 tools work together to create a complete gaming e
 - **`make_move(position)`**: **Core gameplay** - Handles human moves + AI responses in one action
 - **`get_room_state()`**: **Status check** - Shows current board, whose turn, game outcome
 
-##### Enhanced Experience Tools:  
+##### Enhanced Experience Tools:
 - **`send_chat(message)`**: **Social interaction** - Talk with AI opponent, add personality
 - **`list_rooms()`**: **Session management** - Navigate between multiple concurrent games
 - **`get_help()`**: **User guidance** - Instructions and tips for new players
@@ -1110,7 +1141,7 @@ Now let's understand how our 6 tools work together to create a complete gaming e
 ```
 User: "Let's play tic-tac-toe"
 → AI calls: create_room()
-→ User: "I'll take the center"  
+→ User: "I'll take the center"
 → AI calls: make_move(4)
 → User: "Good move!"
 → AI calls: send_chat("Good move!")
@@ -1124,10 +1155,12 @@ Next, we will deploy to Hugging Face Spaces and test with LeChat!
 
 Now let's deploy your MCP server to Hugging Face Spaces so it's accessible to LeChat and other MCP clients via the internet.
 
+> **Warning:** a public Space URL is reachable by anyone. The `/sse` endpoint is protected only by the `MCP_AUTH_TOKEN` bearer token configured below; without it, strangers could create rooms, read every game's chat and bill your Mistral API key. Keep the token secret and consider making the Space private.
+
 ### Why Hugging Face Spaces?
 
 - **Free hosting** for personal projects
-- **Docker support** for custom environments  
+- **Docker support** for custom environments
 - **HTTPS by default** (required for MCP/SSE)
 - **Easy deployment** from Git repositories
 - **Automatic restarts** and health monitoring
@@ -1139,7 +1172,7 @@ Ensure your project structure looks like this:
 ```
 tictactoe-mcp-server/
 ├── mcp_server.py      ✅ Your MCP server
-├── app.py             ✅ Game logic & Flask API  
+├── app.py             ✅ Game logic & Flask API
 ├── requirements.txt   ✅ Dependencies
 ├── Dockerfile         ✅ Container setup
 └── README.md          ✅ Documentation
@@ -1148,7 +1181,7 @@ tictactoe-mcp-server/
 #### Step 2: Prepare the Dockerfile
 
 ```bash
-FROM python:3.11-slim
+FROM python:3.11-slim@sha256:da047cb8f9d1d98e5c070f5300ba9f7274e33b8fc0e5be5ed88740aed1b95ba9
 
 # Set working directory
 WORKDIR /app
@@ -1171,6 +1204,10 @@ echo "Starting Tic-Tac-Toe MCP Server on port 7860..."\n\
 echo "This is the MCP server for LeChat integration"\n\
 echo "MCP Tools: create_room, make_move, send_chat, get_room_state, list_rooms"\n\
 python mcp_server.py' > start.sh && chmod +x start.sh
+
+# Run as an unprivileged user (uid 1000 is what Hugging Face Spaces expects)
+RUN useradd --create-home --uid 1000 app && chown -R app:app /app
+USER app
 
 CMD ["./start.sh"]
 ```
@@ -1201,7 +1238,7 @@ cd tictactoe-mcp-server
 
 # Copy your files (excluding .env)
 cp ../path/to/your/project/mcp_server.py .
-cp ../path/to/your/project/app.py .  
+cp ../path/to/your/project/app.py .
 cp ../path/to/your/project/requirements.txt .
 cp ../path/to/your/project/Dockerfile .
 cp ../path/to/your/project/README.md .
@@ -1226,6 +1263,7 @@ Set Mistral API Key
 4. **Name**: `MISTRAL_API_KEY`
 5. **Value**: Your actual Mistral API key
 6. Click "Save"
+7. Repeat for a second secret named `MCP_AUTH_TOKEN` (for example the output of `openssl rand -hex 32`); the server refuses to start without it and rejects any request that does not send it as `Authorization: Bearer <MCP_AUTH_TOKEN>`
 
 #### Step 5: Monitor Deployment
 
@@ -1299,9 +1337,11 @@ Configure your MCP server connection with the correct details.
 - **Server Name**: `Tic-Tac-Toe Game` (or your preferred name)
 - **Server URL**: `https://yourname-tictactoe-mcp-server.hf.space/sse`
 - **Description**: `Interactive tic-tac-toe game with AI opponent`
+- **Header**: `Authorization: Bearer <MCP_AUTH_TOKEN>` (the same value you stored as the Space secret)
 
 ### Important Note:
 - ✅ **Include `/sse` path** - LeChat needs the SSE endpoint, not just the base URL
+- ✅ **Send the bearer token** - without the `Authorization` header the server answers `401`
 
 ![Enter Connector Details](./assets/connector_details.png)
 
@@ -1326,7 +1366,7 @@ If you see errors, double-check:
 Confirm your MCP connector is active and ready to use.
 
 **Success indicators:**
-- ✅ **Active connection** indicator  
+- ✅ **Active connection** indicator
 - ✅ **Tools available** - LeChat can see your MCP tools
 
 **What happens next:**
@@ -1342,7 +1382,7 @@ Confirm your MCP connector is active and ready to use.
 🎉 **Congratulations!** You now have:
 
 - ✅ **Custom MCP Server** deployed and running
-- ✅ **LeChat Integration** with real-time communication  
+- ✅ **LeChat Integration** with real-time communication
 - ✅ **Interactive Gameplay** with intelligent AI opponent
 - ✅ **Rich Experience** with markdown game boards and chat
 - ✅ **Multi-Session Support** for concurrent games
@@ -1353,7 +1393,7 @@ You've built a complete **end-to-end integration** from custom application logic
 
 1. **Game Logic Foundation** - Room-based tic-tac-toe with AI
 2. **MCP Server Layer** - Tools that AI assistants can call
-3. **Cloud Deployment** - Production server on Hugging Face Spaces  
+3. **Cloud Deployment** - Production server on Hugging Face Spaces
 4. **Chat Integration** - Real-time gameplay in conversational interface
 
 **You've mastered the complete MCP development workflow on LeChat** 🚀

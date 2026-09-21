@@ -1,11 +1,38 @@
+import hmac
 import os
 import time
 import uuid
+import uvicorn
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 from mistralai import Mistral
+from starlette.datastructures import Headers
+from starlette.responses import JSONResponse
 
 load_dotenv()
+
+# --- Bearer-token auth for the SSE transport ---
+# The /sse and /messages endpoints are otherwise callable by anyone who knows the URL.
+MCP_AUTH_TOKEN = os.getenv("MCP_AUTH_TOKEN")
+if not MCP_AUTH_TOKEN:
+    raise SystemExit("MCP_AUTH_TOKEN is not set; refusing to start an unauthenticated MCP server")
+
+
+class BearerAuthMiddleware:
+    """Pure ASGI middleware: reject HTTP requests that lack the shared bearer token."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http":
+            supplied = Headers(scope=scope).get("authorization", "")
+            if not hmac.compare_digest(supplied, f"Bearer {MCP_AUTH_TOKEN}"):
+                response = JSONResponse({"error": "unauthorized"}, status_code=401)
+                await response(scope, receive, send)
+                return
+        await self.app(scope, receive, send)
+
 
 # --- MCP Server Setup ---
 mcp = FastMCP(
@@ -324,4 +351,6 @@ if __name__ == "__main__":
     print("- suggest_tags(note_id)          [AI-powered]")
     print()
     print("Running Smart Notes MCP server with SSE transport")
-    mcp.run(transport="sse")
+    app = mcp.sse_app()
+    app.add_middleware(BearerAuthMiddleware)
+    uvicorn.run(app, host=mcp.settings.host, port=mcp.settings.port)
