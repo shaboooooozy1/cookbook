@@ -67,7 +67,7 @@ pip install pre-commit
 pre-commit install
 ```
 
-Hooks enforced (`.pre-commit-config.yaml`, using `pre-commit-hooks` v4.5.0):
+Hooks enforced (`.pre-commit-config.yaml`, using `pre-commit-hooks` v4.5.0, pinned by commit SHA):
 - `detect-private-key` — blocks commits containing API keys or credentials
 - `check-byte-order-marker` — prevents BOM characters
 - `check-merge-conflict` — catches unresolved merge conflict markers
@@ -78,7 +78,7 @@ Hooks enforced (`.pre-commit-config.yaml`, using `pre-commit-hooks` v4.5.0):
 **Never commit API keys, secrets, or credentials.** Use environment variables instead (e.g., `os.environ["MISTRAL_API_KEY"]`).
 
 ### CI/CD
-- **security-check.yml**: Runs `detect-private-key` on all pushes/PRs to main/develop (Python 3.9)
+- **security-check.yml**: Runs `detect-private-key` on all pushes/PRs to main/develop (Python 3.12, read-only token, SHA-pinned actions)
 - **trigger-docs-update.yml**: Pushes to main trigger a webhook to update `mistralai/platform-docs` via `COOKBOOKS_UPDATE_KEY` secret
 
 ## Development Workflow
