@@ -1,6 +1,6 @@
 # Multi-Agent Orchestration for Data Analysis & Simulation Scenarios
 
-[![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/python-3.13-blue)](https://www.python.org/)
 
 A sophisticated data analysis and simulation platform using a multi-agent workflow powered by Chainlit and Mistral AI. This application enables users to perform complex data queries and run what-if scenario simulations through natural language interactions.
 
@@ -31,7 +31,7 @@ A sophisticated data analysis and simulation platform using a multi-agent workfl
 
 ### Prerequisites
 
-- Python 3.11+
+- Python 3.13 (the project pins `>=3.13,<3.14`, the range Chainlit 2.12 supports)
 - [UV](https://github.com/astral-sh/uv) for package management (recommended)
 - Mistral API key
 

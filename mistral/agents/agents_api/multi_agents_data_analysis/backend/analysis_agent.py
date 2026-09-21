@@ -73,10 +73,11 @@ Instructions:
 class AnalysisAgent:
     def __init__(self, xlsx_path: str) -> None:
         self.conn = load_excel_to_sqlite(xlsx_path)
-        # Tables are populated above; from here on only reads are allowed.
-        self.conn.set_authorizer(self._read_only_authorizer)
         self.client = Mistral(api_key=os.getenv("MISTRAL_API_KEY"))
         self.metadata = self._build_template()
+        # Tables are populated and the schema (PRAGMA table_info) has been read
+        # above; from here on only reads are allowed.
+        self.conn.set_authorizer(self._read_only_authorizer)
         self.completion_args = {"response_format": {"type": "json_object"}}
         self.agent = self.client.beta.agents.create(
             name="data_analysis_agent",
@@ -139,7 +140,12 @@ class AnalysisAgent:
     @staticmethod
     def _read_only_authorizer(action, arg1, arg2, db_name, trigger_or_view):
         """Permit only reads; deny DML/DDL/ATTACH/PRAGMA regardless of what the model emits."""
-        if action in (sqlite3.SQLITE_SELECT, sqlite3.SQLITE_READ, sqlite3.SQLITE_FUNCTION):
+        if action in (
+            sqlite3.SQLITE_SELECT,
+            sqlite3.SQLITE_READ,
+            sqlite3.SQLITE_FUNCTION,
+            sqlite3.SQLITE_RECURSIVE,
+        ):
             return sqlite3.SQLITE_OK
         return sqlite3.SQLITE_DENY
 
