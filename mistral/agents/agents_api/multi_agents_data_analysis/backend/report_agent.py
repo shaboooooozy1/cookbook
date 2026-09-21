@@ -74,8 +74,13 @@ class ReportAgent:
                             hasattr(chunk, "file_id")
                             and getattr(chunk, "type", None) == "tool_file"
                         ):
-                            file_name = getattr(chunk, "file_name", "chart.png")
-                            chart_path = Path("charts") / f"chart_{file_name}"
+                            # The file name comes from the API response: keep only the
+                            # base name and an image extension before writing to disk.
+                            file_name = Path(getattr(chunk, "file_name", "chart.png") or "chart.png").name
+                            if Path(file_name).suffix.lower() not in {".png", ".jpg", ".jpeg", ".svg"}:
+                                file_name = "chart.png"
+                            charts_dir = Path("charts").resolve()
+                            chart_path = charts_dir / f"chart_{file_name}"
                             chart_path.parent.mkdir(exist_ok=True)
 
                             file_content = self.client.files.download(

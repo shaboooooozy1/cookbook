@@ -1,7 +1,8 @@
+import os
 import streamlit as st
 from mistralai.client import MistralClient
 
-mistral_api_key = "your_api_key"
+mistral_api_key = os.environ["MISTRAL_API_KEY"]
 cli = MistralClient(api_key = mistral_api_key)
 
 st.title("Chat with Mistral")

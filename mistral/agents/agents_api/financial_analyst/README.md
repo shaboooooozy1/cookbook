@@ -36,12 +36,10 @@ pip install chainlit yfinance mcp mistralai loguru griffe
 
 ## Environment Setup
 
-Set your MistralAI API key:
+Set your MistralAI API key as an environment variable (the app forwards it to the MCP servers it spawns; nothing needs to be pasted into source files):
 ```bash
 export MISTRAL_API_KEY="your_api_key_here"
 ```
-
-Set your Mistral API key in the servers: `mcp_servers/stdio_report_gen_server.py`
 
 ## Usage
 
@@ -55,4 +53,4 @@ Open your browser and ask questions like:
 - "Get me a report on the historical stock prices of microsoft and save it to msft_historical.md"
 - "Show me Microsoft's analyst recommendations"
 
-The app will automatically use the appropriate MCP servers to fetch data and generate reports.
+The app will automatically use the appropriate MCP servers to fetch data and generate reports. Saved reports land in the `reports/` directory next to `app.py` (only `.md` / `.txt` file names are accepted).
