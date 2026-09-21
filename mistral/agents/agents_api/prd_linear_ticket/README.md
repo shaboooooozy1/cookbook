@@ -42,10 +42,6 @@ export LINEAR_API_KEY="your_linear_api_key"
 export LINEAR_TEAM_ID="your_linear_team_id"
 ```
 
-Configure Linear API credentials in `mcp_servers/stdio_linear_ticket_gen_server.py`:
-- Update `linear_api_key` with your Linear API key
-- Update `team_id` with your Linear team ID
-
 ## Usage
 
 Run the application:
