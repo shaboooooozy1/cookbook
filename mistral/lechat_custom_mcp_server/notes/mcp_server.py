@@ -26,8 +26,11 @@ class BearerAuthMiddleware:
 
     async def __call__(self, scope, receive, send):
         if scope["type"] == "http":
-            supplied = Headers(scope=scope).get("authorization", "")
-            if not hmac.compare_digest(supplied, f"Bearer {MCP_AUTH_TOKEN}"):
+            # Compare bytes: header values are latin-1 decoded, and compare_digest
+            # raises TypeError on str operands with non-ASCII characters.
+            expected = f"Bearer {MCP_AUTH_TOKEN}".encode()
+            supplied = Headers(scope=scope).get("authorization", "").encode("latin-1", "replace")
+            if not hmac.compare_digest(supplied, expected):
                 response = JSONResponse({"error": "unauthorized"}, status_code=401)
                 await response(scope, receive, send)
                 return
