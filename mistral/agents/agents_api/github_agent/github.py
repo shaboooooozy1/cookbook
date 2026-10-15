@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 import httpx
 from mistralai import (
     Mistral,
-   
+
 )
 
 from mistralai.extra.run.context import RunContext
@@ -39,7 +39,7 @@ def format_messages(all_cl_messages: list[cl.Message]):
     api_input_list = []
 
     if not all_cl_messages:
-        
+
         return []
 
     current_cl_message_obj = all_cl_messages[-1]
@@ -55,7 +55,7 @@ def format_messages(all_cl_messages: list[cl.Message]):
             processed_history_for_api.append({"role": api_role, "content": msg.content})
     api_input_list.extend(processed_history_for_api)
     api_input_list.append({
-        "role": "user", 
+        "role": "user",
         "content": current_cl_message_obj.content
     })
     return api_input_list
@@ -64,7 +64,7 @@ def format_messages(all_cl_messages: list[cl.Message]):
 async def on_mcp_connect(connection, session: ClientSession):
     """Called when an MCP connection is established"""
     MCP_TOOLS.append(connection)
-    
+
 @cl.on_mcp_disconnect
 async def on_mcp_disconnect(name: str, session: ClientSession):
     """Called when an MCP connection is terminated"""
@@ -82,9 +82,9 @@ async def on_message(message: cl.Message):
             messages = cl.user_session.get("messages", [])  # Add default [] to avoid None error
             messages.append(message)
             cl.user_session.set("messages", messages)
-            
+
             if MCP_TOOLS:
-                #REgistering any tools that are inside the 
+                #REgistering any tools that are inside the
                 for tool in MCP_TOOLS:
                     if tool.clientType == "sse":
                         print("sse")
@@ -99,7 +99,7 @@ async def on_message(message: cl.Message):
                         temp_mcp_client = MCPClientSTDIO(stdio_params=server_params)
 
 
-                    await run_ctx.register_mcp_client(mcp_client=temp_mcp_client)    
+                    await run_ctx.register_mcp_client(mcp_client=temp_mcp_client)
             #then add github ones :
             server_params = StdioServerParameters(
                 command="docker",
@@ -109,24 +109,24 @@ async def on_message(message: cl.Message):
                     "--rm",
                     "-e",
                     "GITHUB_PERSONAL_ACCESS_TOKEN",
-                    "ghcr.io/github/github-mcp-server"
+                    "ghcr.io/github/github-mcp-server:v1.12.2@sha256:508a0857ec762b1ab1cece29193345b501fab1dd9d1228a7b617062954cecac6"
                     ],
                 env={
         "GITHUB_PERSONAL_ACCESS_TOKEN": os.environ["GITHUB_PERSONAL_ACCESS_TOKEN"]
       }
             )
-            temp_mcp_client = MCPClientSTDIO(stdio_params=server_params) 
-            await run_ctx.register_mcp_client(mcp_client=temp_mcp_client)   
-        
+            temp_mcp_client = MCPClientSTDIO(stdio_params=server_params)
+            await run_ctx.register_mcp_client(mcp_client=temp_mcp_client)
 
-                
+
+
             inputs_messages=format_messages(messages)
             response = await client.beta.conversations.run_async(
                 run_ctx=run_ctx,
                 inputs=inputs_messages,
             )
 
-     
+
 
             for entry in response.output_entries:
                 if hasattr(entry, 'type') and entry.type == 'function.call':
@@ -137,13 +137,13 @@ async def on_message(message: cl.Message):
                         )
                         await mes.send()
                         messages.append(mes)
-            
+
             if response.output_as_text:
                  msg = cl.Message(content=response.output_as_text)
                  await msg.send()
                  messages.append(msg)
             cl.user_session.set("messages", messages)
-                 
+
 
 
 if __name__ == "__main__":

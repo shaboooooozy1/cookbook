@@ -21,6 +21,6 @@
         "@e2b/code-interpreter": "^0.0.5",
         "@mistralai/mistralai": "^0.4.0",
         "dotenv": "^16.4.5",
-        "esbuild": "^0.20.2"
+        "esbuild": "^0.25.12"
     }
 }

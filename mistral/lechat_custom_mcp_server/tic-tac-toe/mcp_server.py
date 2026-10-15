@@ -1,10 +1,40 @@
+import hmac
 import os
 import asyncio
+import uvicorn
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
+from starlette.datastructures import Headers
+from starlette.responses import JSONResponse
 from app import Room, rooms, get_ai_move_for_room, get_ai_chat_for_room
 
 load_dotenv()
+
+# --- Bearer-token auth for the SSE transport ---
+# The /sse and /messages endpoints are otherwise callable by anyone who knows the URL.
+MCP_AUTH_TOKEN = os.getenv("MCP_AUTH_TOKEN")
+if not MCP_AUTH_TOKEN:
+    raise SystemExit("MCP_AUTH_TOKEN is not set; refusing to start an unauthenticated MCP server")
+
+
+class BearerAuthMiddleware:
+    """Pure ASGI middleware: reject HTTP requests that lack the shared bearer token."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http":
+            # Compare bytes: header values are latin-1 decoded, and compare_digest
+            # raises TypeError on str operands with non-ASCII characters.
+            expected = f"Bearer {MCP_AUTH_TOKEN}".encode()
+            supplied = Headers(scope=scope).get("authorization", "").encode("latin-1", "replace")
+            if not hmac.compare_digest(supplied, expected):
+                response = JSONResponse({"error": "unauthorized"}, status_code=401)
+                await response(scope, receive, send)
+                return
+        await self.app(scope, receive, send)
+
 
 # --- MCP Server Setup ---
 mcp = FastMCP(
@@ -32,9 +62,9 @@ def create_room() -> dict:
     try:
         room = Room()
         rooms[room.id] = room
-        
+
         current_session['active_room_id'] = room.id
-        
+
         return {
             "status": "success",
             "room_id": room.id,
@@ -43,7 +73,7 @@ def create_room() -> dict:
             "instructions": "Use make_move() to play or send_chat() to talk with Mistral AI",
             "game_info": {
                 "your_symbol": "X",
-                "ai_symbol": "O", 
+                "ai_symbol": "O",
                 "board_positions": "0-8 (left to right, top to bottom)"
             }
         }
@@ -66,21 +96,21 @@ def get_room_state(room_id: str = None) -> dict:
     try:
         # Use provided room_id or current active room
         target_room_id = room_id or current_session.get('active_room_id')
-        
+
         if not target_room_id:
             return {
                 "status": "error",
                 "message": "No active room. Create a room first using create_room()."
             }
-        
+
         if target_room_id not in rooms:
             return {
                 "status": "error",
                 "message": f"Room {target_room_id} not found. It may have been cleaned up."
             }
-        
+
         room = rooms[target_room_id]
-        
+
         return {
             "status": "success",
             "room_id": target_room_id,
@@ -110,42 +140,42 @@ async def make_move(position: int, room_id: str = None) -> dict:
     try:
         # Use provided room_id or current active room
         target_room_id = room_id or current_session.get('active_room_id')
-        
+
         if not target_room_id:
             return {
                 "status": "error",
                 "message": "No active room. Create a room first using create_room()."
             }
-        
+
         if target_room_id not in rooms:
             return {
                 "status": "error",
                 "message": f"Room {target_room_id} not found."
             }
-        
+
         room = rooms[target_room_id]
-        
+
         # Validate move
         if position < 0 or position > 8:
             return {
                 "status": "error",
                 "message": "Invalid position. Use 0-8 (left to right, top to bottom)."
             }
-        
+
         if room.game_status != 'active':
             return {
-                "status": "error", 
+                "status": "error",
                 "message": f"Game is over. Status: {room.game_status}",
                 "markdown_state": room.to_markdown()
             }
-        
+
         if room.current_player != 'X':
             return {
                 "status": "error",
                 "message": "It's not your turn! Wait for AI to move.",
                 "markdown_state": room.to_markdown()
             }
-        
+
         # Make human move
         if not room.make_move(position, 'X'):
             return {
@@ -153,16 +183,16 @@ async def make_move(position: int, room_id: str = None) -> dict:
                 "message": f"Invalid move! Position {position} may already be occupied.",
                 "markdown_state": room.to_markdown()
             }
-        
+
         result_message = f"✅ You played X at position {position}\n\n"
-        
+
         # Check if game ended after human move
         if room.game_status != 'active':
             if room.winner == 'X':
                 result_message += "🎉 Congratulations! You won!\n\n"
             else:
                 result_message += "🤝 It's a draw!\n\n"
-            
+
             result_message += room.to_markdown()
             return {
                 "status": "success",
@@ -170,7 +200,7 @@ async def make_move(position: int, room_id: str = None) -> dict:
                 "game_over": True,
                 "winner": room.winner
             }
-        
+
         # Get AI move
         try:
             ai_response = get_ai_move_for_room(room)
@@ -181,13 +211,13 @@ async def make_move(position: int, room_id: str = None) -> dict:
                     room.make_move(ai_move, 'O')
                     if 'message' in ai_response:
                         room.add_chat_message(ai_response['message'], 'ai')
-                
+
                 result_message += f"🤖 Mistral AI played O at position {ai_response['move']}\n"
                 if 'message' in ai_response:
                     result_message += f"💬 Mistral says: \"{ai_response['message']}\"\n\n"
                 else:
                     result_message += "\n"
-                
+
                 # Check if AI won
                 if room.game_status == 'won' and room.winner == 'O':
                     result_message += "💀 Mistral AI wins this round!\n\n"
@@ -195,12 +225,12 @@ async def make_move(position: int, room_id: str = None) -> dict:
                     result_message += "🤝 It's a draw!\n\n"
             else:
                 result_message += "⚠️ AI move failed, but you can continue\n\n"
-                
+
         except Exception as e:
             result_message += f"⚠️ AI move error: {str(e)}\n\n"
-        
+
         result_message += room.to_markdown()
-        
+
         return {
             "status": "success",
             "message": result_message,
@@ -208,7 +238,7 @@ async def make_move(position: int, room_id: str = None) -> dict:
             "winner": room.winner if room.game_status == 'won' else None,
             "your_turn": room.current_player == 'X' and room.game_status == 'active'
         }
-        
+
     except Exception as e:
         return {
             "status": "error",
@@ -229,38 +259,38 @@ async def send_chat(message: str, room_id: str = None) -> dict:
     try:
         # Use provided room_id or current active room
         target_room_id = room_id or current_session.get('active_room_id')
-        
+
         if not target_room_id:
             return {
                 "status": "error",
                 "message": "No active room. Create a room first using create_room()."
             }
-        
+
         if target_room_id not in rooms:
             return {
                 "status": "error",
                 "message": f"Room {target_room_id} not found."
             }
-        
+
         room = rooms[target_room_id]
-        
+
         # Add user message
         room.add_chat_message(message, 'user')
-        
+
         # Get AI response
         ai_response = get_ai_chat_for_room(room, message)
         room.add_chat_message(ai_response, 'ai')
-        
+
         result_message = f"💬 **You:** {message}\n💬 **Mistral AI:** {ai_response}\n\n"
         result_message += room.to_markdown()
-        
+
         return {
             "status": "success",
             "message": result_message,
             "your_message": message,
             "ai_response": ai_response
         }
-        
+
     except Exception as e:
         return {
             "status": "error",
@@ -282,7 +312,7 @@ def list_rooms() -> dict:
                 "active_rooms": [],
                 "count": 0
             }
-        
+
         room_list = []
         for room_id, room in rooms.items():
             room_info = {
@@ -295,12 +325,12 @@ def list_rooms() -> dict:
                 "is_active": current_session.get('active_room_id') == room_id
             }
             room_list.append(room_info)
-        
+
         active_room_id = current_session.get('active_room_id')
         message = f"Found {len(room_list)} active rooms."
         if active_room_id:
             message += f" Current active room: {active_room_id}"
-        
+
         return {
             "status": "success",
             "message": message,
@@ -335,7 +365,7 @@ def get_help() -> dict:
                 "description": "Board positions (0-8):",
                 "layout": [
                     "0 | 1 | 2",
-                    "---------", 
+                    "---------",
                     "3 | 4 | 5",
                     "---------",
                     "6 | 7 | 8"
@@ -354,7 +384,7 @@ def get_help() -> dict:
         "available_commands": [
             "create_room() - Start a new game",
             "make_move(position) - Make your move (0-8)",
-            "send_chat('message') - Chat with AI", 
+            "send_chat('message') - Chat with AI",
             "get_room_state() - Check current game",
             "list_rooms() - See all active games",
             "get_help() - Show this help"
@@ -366,7 +396,7 @@ if __name__ == "__main__":
     print(f"Tic-Tac-Toe Rooms MCP Server starting on port 7860...")
     print("Available game features:")
     print("- Create multiple game rooms")
-    print("- Play against Mistral AI with personality") 
+    print("- Play against Mistral AI with personality")
     print("- Real-time chat with the AI")
     print("- Markdown state representation")
     print("- Room management")
@@ -381,4 +411,6 @@ if __name__ == "__main__":
     print()
     print("This MCP server is ready for LeChat integration!")
     print("Running Tic-Tac-Toe MCP server with SSE transport")
-    mcp.run(transport="sse")
+    app = mcp.sse_app()
+    app.add_middleware(BearerAuthMiddleware)
+    uvicorn.run(app, host=mcp.settings.host, port=mcp.settings.port)

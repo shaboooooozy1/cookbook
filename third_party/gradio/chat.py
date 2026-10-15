@@ -1,8 +1,9 @@
+import os
 import gradio as gr
 from mistralai.client import MistralClient
 from mistralai.models.chat_completion import ChatMessage
 
-mistral_api_key = "your_api_key"
+mistral_api_key = os.environ["MISTRAL_API_KEY"]
 cli = MistralClient(api_key = mistral_api_key)
 
 def ask_mistral(message: str, history: list):

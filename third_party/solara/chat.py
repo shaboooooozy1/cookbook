@@ -1,7 +1,8 @@
+import os
 import solara as sl
 from mistralai import Mistral
 
-mistral_api_key = "your_api_key"
+mistral_api_key = os.environ["MISTRAL_API_KEY"]
 client = Mistral(api_key=mistral_api_key)
 
 from typing import List

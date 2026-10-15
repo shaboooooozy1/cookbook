@@ -35,18 +35,12 @@ pip install chainlit mcp loguru pydantic gql
 
 ## Environment Setup
 
-Set your MistralAI API key:
+Set your MistralAI API key and your Linear credentials as environment variables (the app forwards them to the MCP servers it spawns; nothing needs to be pasted into source files):
 ```bash
 export MISTRAL_API_KEY="your_api_key_here"
+export LINEAR_API_KEY="your_linear_api_key"
+export LINEAR_TEAM_ID="your_linear_team_id"
 ```
-
-Set your Mistral API key in both the servers:
-- `mcp_servers/stdio_linear_ticket_gen_server.py`
-- `mcp_servers/stdio_prd_generator_server`
-
-Configure Linear API credentials in `mcp_servers/stdio_linear_ticket_gen_server.py`:
-- Update `linear_api_key` with your Linear API key
-- Update `team_id` with your Linear team ID
 
 ## Usage
 

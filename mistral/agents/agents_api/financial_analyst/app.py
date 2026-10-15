@@ -21,23 +21,23 @@ server_to_tool_map = {
 
 class FinanceAgent:
     """Main financial analysis agent that handles user queries using MistralAI with MCP servers"""
-    
+
     def __init__(self):
         self.client = None
         self.agent = None
-        
+
     async def initialize(self):
         """Initialize the MistralAI client and create the financial agent"""
         api_key = os.environ["MISTRAL_API_KEY"]
         self.client = Mistral(api_key=api_key)
-        
+
         self.agent = self.client.beta.agents.create(
             model=MODEL,
             name="finance-agent",
             instructions="Agent to answer user queries regarding finance, generate reports and save them.",
             description="Financial analysis agent",
         )
-    
+
     async def process_query(self, query: str):
         """Process user query using the agent with MCP servers for financial data and reporting"""
         async def run_in_context():
@@ -56,7 +56,7 @@ class FinanceAgent:
                 StdioServerParameters(
                     command="python",
                     args=[str((cwd / "mcp_servers/stdio_report_gen_server.py").resolve())],
-                    env=None,
+                    env={"MISTRAL_API_KEY": os.environ["MISTRAL_API_KEY"]},
                 ),
                 # Report saving server for persisting generated reports
                 StdioServerParameters(
@@ -100,10 +100,10 @@ async def main(message: cl.Message):
     """Handle incoming user messages and stream agent responses"""
     user_query = message.content.strip()
     server_tools = []
-    
+
     if not user_query:
         return
-    
+
     try:
         result_events = await finance_agent.process_query(user_query)
         msg = cl.Message(content="")
@@ -130,7 +130,7 @@ async def main(message: cl.Message):
                     case ResponseErrorEvent():
                         logger.debug(event.data)
                         await msg.stream_token(f"\n\n 🔴 Error: {event.data.message}\n\n")
-        
+
     except Exception as e:
         await cl.Message(content=f"Error: {str(e)}").send()
 

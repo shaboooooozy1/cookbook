@@ -1,10 +1,11 @@
+import os
 import panel as pn
 from mistralai.client import MistralClient
 from mistralai.models.chat_completion import ChatMessage
 
 pn.extension()
 
-mistral_api_key = "your_api_key"
+mistral_api_key = os.environ["MISTRAL_API_KEY"]
 cli = MistralClient(api_key = mistral_api_key)
 
 async def callback(contents: str, user: str, instance: pn.chat.ChatInterface):

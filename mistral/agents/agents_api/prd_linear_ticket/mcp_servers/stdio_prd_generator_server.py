@@ -3,6 +3,7 @@ import logging
 from mistralai import Mistral
 import traceback
 import os
+from pathlib import Path
 
 # Configure logging to only show errors
 logging.basicConfig(level=logging.ERROR)
@@ -10,26 +11,34 @@ logging.basicConfig(level=logging.ERROR)
 # Initialize FastMCP server for PRD generation
 mcp = FastMCP("prd_generator")
 
+# Transcripts must live inside the project directory (one level above mcp_servers/)
+BASE_DIR = Path(__file__).resolve().parent.parent
+
 # Initialize MistralAI client for OCR and PRD generation
-mistral_client = Mistral(api_key="<YOUR MISTRALAI API KEY>")
+mistral_client = Mistral(api_key=os.environ["MISTRAL_API_KEY"])
 
 def parse_transcript(file_path: str) -> str:
     """Parse a transcript PDF file and extract text from all pages using MistralAI OCR
-    
+
     Args:
         file_path (str): Path to the PDF file to process
-        
+
     Returns:
         str: Extracted text content from the PDF
     """
+    # Only accept existing .pdf files inside the project directory
+    candidate = (BASE_DIR / file_path).resolve()
+    if not candidate.is_relative_to(BASE_DIR):
+        raise ValueError("transcript must live inside the project directory")
+    if candidate.suffix.lower() != ".pdf" or not candidate.is_file():
+        raise ValueError("transcript must be an existing .pdf file")
+
     # Upload PDF file to MistralAI for OCR processing
-    uploaded_pdf = mistral_client.files.upload(
-        file={
-            "file_name": file_path,
-            "content": open(file_path, "rb"),
-        },
-        purpose="ocr"
-    )
+    with candidate.open("rb") as fh:
+        uploaded_pdf = mistral_client.files.upload(
+            file={"file_name": candidate.name, "content": fh.read()},
+            purpose="ocr",
+        )
 
     # Get signed URL for the uploaded file
     signed_url = mistral_client.files.get_signed_url(file_id=uploaded_pdf.id)
@@ -82,19 +91,19 @@ async def generate_prd(file_name: str) -> str:
 
         PRD:
         """
-        
+
         # Generate PRD using MistralAI
         response = mistral_client.chat.complete(
             model="mistral-medium-latest",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.1
         )
-        
+
         return response.choices[0].message.content
-    
+
     except Exception as e:
-        logging.error(f"Error in generate_prd: {str(e)}")
-        return traceback.format_exc()
+        logging.error(f"Error in generate_prd: {str(e)}\n{traceback.format_exc()}")
+        return f"Error generating PRD: {e}"
 
 def run_prd_gen_server():
     """Start the PRD generation MCP server using stdio transport"""

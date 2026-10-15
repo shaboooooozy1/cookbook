@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.ERROR)
 mcp = FastMCP("report_generator")
 
 # Initialize MistralAI client for report content generation
-client = Mistral(api_key="<YOUR MISTRALAI API KEY>")
+client = Mistral(api_key=os.environ["MISTRAL_API_KEY"])
 
 # System prompt to guide the LLM in generating financial reports
 system_prompt = "You are a professional financial analyst. Generate a very short report based on following information regarding different companies."
@@ -20,10 +20,10 @@ system_prompt = "You are a professional financial analyst. Generate a very short
 def generate_report_content(prompt: str) -> str:
     """
     Generate financial report content using MistralAI LLM based on provided data
-    
+
     Args:
         prompt (str): The prompt containing financial data and analysis requirements
-    
+
     Returns:
         str: Generated report content or error message
     """

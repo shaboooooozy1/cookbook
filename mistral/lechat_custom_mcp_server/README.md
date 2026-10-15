@@ -27,7 +27,7 @@ LeChat  <--SSE-->  Your MCP Server (hosted on HF Spaces, etc.)
 ## Common Stack
 
 All examples use:
-- **[FastMCP](https://github.com/jlowin/fastmcp)** -- Python framework for building MCP servers
+- **[MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk)** -- provides the `FastMCP` server class used by every example
 - **[Mistral AI SDK](https://github.com/mistralai/client-python)** -- for AI-powered tool logic
 - **SSE transport** -- the protocol LeChat uses to communicate with MCP servers
 
@@ -39,10 +39,13 @@ Each example can be run locally:
 cd <server-directory>
 pip install -r requirements.txt
 export MISTRAL_API_KEY="your-key"
+export MCP_AUTH_TOKEN="$(openssl rand -hex 32)"
 python mcp_server.py
 ```
 
 Or deployed to [Hugging Face Spaces](https://huggingface.co/spaces) using the included `Dockerfile`.
+
+> **Warning:** every server requires `MCP_AUTH_TOKEN` and rejects requests to `/sse` and `/messages` that do not send `Authorization: Bearer <MCP_AUTH_TOKEN>`. Without it, anyone who knows the Space URL can call your tools (read or delete stored data) and bill your Mistral API key. Add the token as a Space secret and configure the same header on the LeChat connector.
 
 ## Building Your Own
 

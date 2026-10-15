@@ -16,12 +16,12 @@ logging.basicConfig(level=logging.ERROR)
 mcp = FastMCP("linear_ticket_generator")
 
 # Initialize MistralAI client for PRD parsing
-mistral_client = Mistral(api_key="<YOUR MISTRALAI API KEY>")
+mistral_client = Mistral(api_key=os.environ["MISTRAL_API_KEY"])
 
 # Linear API configuration
-linear_api_key = "<YOUR LINEAR API KEY>"
+linear_api_key = os.environ["LINEAR_API_KEY"]
 graphql_url = "https://api.linear.app/graphql"
-team_id = "<YOUR LINEAR TEAM ID>"
+team_id = os.environ["LINEAR_TEAM_ID"]
 
 # Initialize GraphQL client for Linear API
 client = Client(
@@ -129,7 +129,7 @@ def create_tickets_from_prd(prd: str) -> List[Dict[str, Any]]:
     # Parse the PRD into structured feature data
     parsed_items = parse_prd(prd)
     results = []
-    
+
     # Create a Linear ticket for each feature
     for title, description in zip(
         parsed_items['Features'],
